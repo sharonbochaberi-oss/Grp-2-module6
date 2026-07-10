@@ -3,14 +3,26 @@ const API_BASE_URL =
   (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:4000"
     : "");
-const BASE_URL = API_BASE_URL === "/api" ? "" : API_BASE_URL.replace(/\/$/, "");
+export const BASE_URL = API_BASE_URL === "/api" ? "" : API_BASE_URL.replace(/\/$/, "");
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function authHeaders(extra = {}) {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}`, ...extra } : { ...extra };
+}
 
 function buildUrl(path) {
   return `${BASE_URL}${path}`;
 }
 
 async function fetchJson(url, options = {}) {
-  const res = await fetch(url, options);
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...options.headers },
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`API error ${res.status}: ${text}`);
@@ -20,11 +32,7 @@ async function fetchJson(url, options = {}) {
 
 export const fetchCocktails = async (search = "") => {
   const query = search ? `?search=${encodeURIComponent(search)}` : "";
-  return fetchJson(buildUrl(`/api/cocktails${query}`));
-};
-
-export const fetchCocktailCategories = async () => {
-  return fetchJson(`${BASE_URL}/api/cocktails/categories`);
+  return fetchJson(buildUrl(`/api/cocktails/${query}`));
 };
 
 export const getCocktailById = async (id) => {
@@ -32,7 +40,7 @@ export const getCocktailById = async (id) => {
 };
 
 export const createCocktail = async (cocktail) => {
-  return fetchJson(buildUrl(`/api/cocktails`), {
+  return fetchJson(buildUrl(`/api/cocktails/`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(cocktail),
@@ -75,6 +83,24 @@ export const updateNote = async (noteId, text) => {
 
 export const deleteNote = async (noteId) => {
   return fetchJson(buildUrl(`/api/notes/${noteId}`), {
+    method: "DELETE",
+  });
+};
+
+export const getFavorites = async () => {
+  return fetchJson(buildUrl(`/api/favorites`));
+};
+
+export const addFavorite = async (cocktailId, category = "General") => {
+  return fetchJson(buildUrl(`/api/favorites`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cocktailId, category }),
+  });
+};
+
+export const deleteFavorite = async (favoriteId) => {
+  return fetchJson(buildUrl(`/api/favorites/${favoriteId}`), {
     method: "DELETE",
   });
 };

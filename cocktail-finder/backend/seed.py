@@ -1,39 +1,46 @@
+import urllib.request
+import json
 from app import app
 from extensions import db
 from models import Cocktail
+
+
+def fetch_cocktails_by_letter(letter):
+    url = f"https://www.thecocktaildb.com/api/json/v1/1/search.php?f={letter}"
+    with urllib.request.urlopen(url, timeout=10) as res:
+        data = json.loads(res.read())
+    return data.get("drinks") or []
+
+
+def parse_ingredients(drink):
+    ingredients = []
+    for i in range(1, 16):
+        ingredient = drink.get(f"strIngredient{i}")
+        if ingredient and ingredient.strip():
+            measure = (drink.get(f"strMeasure{i}") or "").strip()
+            ingredients.append(f"{measure} {ingredient}".strip() if measure else ingredient.strip())
+    return ingredients
+
 
 with app.app_context():
     if Cocktail.query.first():
         print("Database already seeded.")
     else:
-        cocktails = [
-            Cocktail(
-                name="Classic Margarita",
-                category="Cocktail",
-                alcoholic="Alcoholic",
-                glass="Cocktail glass",
-                image="https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
-                instructions="Rub the rim of the glass with lime, dip in salt, shake ingredients with ice and strain."
-            ),
-            Cocktail(
-                name="Mojito",
-                category="Cocktail",
-                alcoholic="Alcoholic",
-                glass="Highball glass",
-                image="https://www.thecocktaildb.com/images/media/drink/3z6xdi1589574603.jpg",
-                instructions="Muddle mint with sugar and lime juice, add rum and top with soda water."
-            ),
-            Cocktail(
-                name="Espresso Martini",
-                category="Cocktail",
-                alcoholic="Alcoholic",
-                glass="Martini glass",
-                image="https://www.thecocktaildb.com/images/media/drink/n0sx531504372951.jpg",
-                instructions="Shake vodka, coffee liqueur and espresso with ice, then strain into a chilled glass."
-            ),
-        ]
+        cocktails = []
+        for letter in ["a", "b", "c", "m", "s"]:
+            drinks = fetch_cocktails_by_letter(letter)
+            for drink in drinks:
+                cocktails.append(Cocktail(
+                    name=drink.get("strDrink"),
+                    category=drink.get("strCategory", "Cocktail"),
+                    alcoholic=drink.get("strAlcoholic", "Alcoholic"),
+                    glass=drink.get("strGlass", "Cocktail glass"),
+                    image=drink.get("strDrinkThumb", ""),
+                    instructions=drink.get("strInstructions", ""),
+                    ingredients=parse_ingredients(drink),
+                ))
+            print(f"Fetched {len(drinks)} cocktails for letter '{letter}'")
 
         db.session.add_all(cocktails)
         db.session.commit()
-
-        print("Database seeded successfully.")
+        print(f"Database seeded with {len(cocktails)} cocktails.")

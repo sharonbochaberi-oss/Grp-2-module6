@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function DrinkCard({ drink, index, onRemove }) {
+function DrinkCard({ drink, index, favoriteId, onToggleFavorite }) {
   const navigate = useNavigate();
 
   const id = drink.idDrink || drink.id;
@@ -10,41 +9,11 @@ function DrinkCard({ drink, index, onRemove }) {
   const category = drink.strCategory || drink.category || "Cocktail";
   const alcoholic = drink.strAlcoholic || drink.alcoholic || "Alcoholic";
 
-  const favourites = JSON.parse(localStorage.getItem("favorites") || "[]");
-
-  const [isFav, setIsFav] = useState(
-    favourites.some((f) => (f.id || f.idDrink) === id)
-  );
+  const isFav = Boolean(favoriteId);
 
   const toggleFavorite = (e) => {
     e.stopPropagation();
-
-    const stored = JSON.parse(localStorage.getItem("favorites") || "[]");
-
-    let updated;
-
-    if (isFav) {
-      updated = stored.filter((f) => (f.id || f.idDrink) !== id);
-    } else {
-      updated = [
-        ...stored,
-        {
-          id,
-          idDrink: id,
-          strDrink: title,
-          strDrinkThumb: image,
-          strCategory: category,
-          strAlcoholic: alcoholic,
-        },
-      ];
-    }
-
-    localStorage.setItem("favorites", JSON.stringify(updated));
-    setIsFav(!isFav);
-
-    if (isFav && onRemove) {
-      onRemove(id);
-    }
+    onToggleFavorite?.(id, favoriteId, category);
   };
 
   return (

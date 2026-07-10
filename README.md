@@ -2,12 +2,14 @@
 
 # Cocktail Finder App
 
-Cocktail Finder is a full-stack web application built with **React**, **Vite**, **Flask**, **SQLAlchemy**, and **PostgreSQL**. The application allows users to browse, search, create, edit, and delete cocktail recipes, manage notes, and save favorite drinks.
+Cocktail Finder is a full-stack web application built with **React**, **Vite**, **Flask**, **SQLAlchemy**, and **PostgreSQL**. The application allows users to sign up, log in, browse, search, create, edit, and delete cocktail recipes, manage notes, and save favorite drinks tied to their own account.
 
 
 ## Features
 
-* Browse cocktail recipes
+* User signup, login, and logout with token-based authentication
+* Per-user notes and favorites (each user only sees and manages their own)
+* Browse cocktail recipes, seeded from TheCocktailDB API
 * Search cocktails by name or category
 * View cocktail details
 * Add, edit, and delete cocktails
@@ -34,6 +36,7 @@ Cocktail Finder is a full-stack web application built with **React**, **Vite**, 
 * Flask-CORS
 * Flask-SQLAlchemy
 * Flask-Migrate
+* Flask-Bcrypt
 
 ### Database
 
@@ -41,7 +44,14 @@ Cocktail Finder is a full-stack web application built with **React**, **Vite**, 
 
 ### External API
 
-* TheCocktailDB API (Cocktail Categories)
+* TheCocktailDB API (cocktail seed data)
+
+
+## Authentication
+
+Authentication is token-based: on signup/login the backend creates a row in a `sessions` table with a random hex token and returns it to the client. The frontend stores the token in `localStorage` and sends it as `Authorization: Bearer <token>` on every request. Passwords are hashed with Flask-Bcrypt and never stored in plain text.
+
+All `/api/cocktails`, `/api/cocktails/:id/notes`, `/api/notes`, and `/api/favorites` routes require a valid token. Write operations (create/update/delete) are scoped to the authenticated user; read operations for cocktails also return cocktails seeded for all users.
 
 
 ## Installation
@@ -63,17 +73,17 @@ npm run dev
 ```bash
 cd cocktail-finder/backend
 
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 
 pip install -r requirements.txt
 
-python -m flask db upgrade
-python seed.py
-python app.py
+python3 -m flask db upgrade
+python3 seed.py
+python3 app.py
 ```
 
-Open the React application at the Vite URL (usually `http://localhost:5173`).
+Open the React application at the Vite URL (usually `http://localhost:5173`). You'll need to sign up for an account before the app will load any data.
 
 
 ## Project Structure
@@ -82,7 +92,7 @@ Open the React application at the Vite URL (usually `http://localhost:5173`).
 cocktail-finder/
 │
 ├── backend/
-│   ├── controllers/
+│   ├── views/
 │   ├── routes/
 │   ├── migrations/
 │   ├── instance/
@@ -96,6 +106,7 @@ cocktail-finder/
 ├── src/
 │   ├── assets/
 │   ├── components/
+│   ├── context/
 │   ├── pages/
 │   ├── services/
 │   ├── App.jsx
@@ -109,11 +120,20 @@ cocktail-finder/
 
 ## API Endpoints
 
+All routes below require an `Authorization: Bearer <token>` header, except signup/login.
+
+### Auth
+
+* POST `/api/auth/signup`
+* POST `/api/auth/login`
+* POST `/api/auth/logout`
+* GET `/api/auth/me`
+
 ### Cocktails
 
-* GET `/api/cocktails`
+* GET `/api/cocktails/`
 * GET `/api/cocktails/:id`
-* POST `/api/cocktails`
+* POST `/api/cocktails/`
 * PUT `/api/cocktails/:id`
 * DELETE `/api/cocktails/:id`
 

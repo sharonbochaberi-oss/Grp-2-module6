@@ -1,20 +1,20 @@
-from flask import jsonify, request
+from flask import jsonify, request, g
 from models import Cocktail
 from extensions import db
+from views.auth_view import authenticate
 
 
 def get_all():
+    error = authenticate()
+    if error:
+        return error
     search = request.args.get("search", "").lower()
-
     cocktails = Cocktail.query.all()
-
     if search:
         cocktails = [
             c for c in cocktails
-            if search in c.name.lower()
-            or search in (c.category or "").lower()
+            if search in c.name.lower() or search in (c.category or "").lower()
         ]
-
     return jsonify([
         {
             "id": c.id,
@@ -24,28 +24,29 @@ def get_all():
             "glass": c.glass,
             "image": c.image,
             "instructions": c.instructions,
+            "ingredients": c.ingredients or [],
         }
         for c in cocktails
     ])
 
 
 def get_categories():
+    error = authenticate()
+    if error:
+        return error
     categories = (
         Cocktail.query.with_entities(Cocktail.category)
         .distinct()
         .all()
     )
-
-    return jsonify([
-        category[0]
-        for category in categories
-        if category[0]
-    ])
+    return jsonify([cat[0] for cat in categories if cat[0]])
 
 
 def get_one(id):
+    error = authenticate()
+    if error:
+        return error
     cocktail = Cocktail.query.get_or_404(id)
-
     return jsonify({
         "id": cocktail.id,
         "name": cocktail.name,
@@ -59,23 +60,34 @@ def get_one(id):
 
 
 def create():
+    error = authenticate()
+    if error:
+        return error
     data = request.json
-    cocktail = Cocktail(**data)
+    data.pop("id", None)
+    cocktail = Cocktail(**data, user_id=g.current_user.id)
     db.session.add(cocktail)
     db.session.commit()
-    return jsonify({"message": "Cocktail created"}), 201
+    return jsonify({"id": cocktail.id, "message": "Cocktail created"}), 201
 
 
 def update(id):
-    cocktail = Cocktail.query.get_or_404(id)
+    error = authenticate()
+    if error:
+        return error
+    cocktail = Cocktail.query.filter_by(id=id, user_id=g.current_user.id).first_or_404()
     for key, value in request.json.items():
-        setattr(cocktail, key, value)
+        if key != "id":
+            setattr(cocktail, key, value)
     db.session.commit()
     return jsonify({"message": "Cocktail updated"})
 
 
 def remove(id):
-    cocktail = Cocktail.query.get_or_404(id)
+    error = authenticate()
+    if error:
+        return error
+    cocktail = Cocktail.query.filter_by(id=id, user_id=g.current_user.id).first_or_404()
     db.session.delete(cocktail)
     db.session.commit()
     return "", 204
