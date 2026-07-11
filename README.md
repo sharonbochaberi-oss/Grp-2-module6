@@ -4,6 +4,8 @@
 
 Cocktail Finder is a full-stack web application built with **React**, **Vite**, **Flask**, **SQLAlchemy**, and **PostgreSQL**. The application allows users to sign up, log in, browse, search, create, edit, and delete cocktail recipes, manage notes, and save favorite drinks tied to their own account.
 
+**Live demo:** [https://grp-2-module6.vercel.app](https://grp-2-module6.vercel.app)
+
 
 ## Features
 
@@ -52,6 +54,21 @@ Cocktail Finder is a full-stack web application built with **React**, **Vite**, 
 Authentication is token-based: on signup/login the backend creates a row in a `sessions` table with a random hex token and returns it to the client. The frontend stores the token in `localStorage` and sends it as `Authorization: Bearer <token>` on every request. Passwords are hashed with Flask-Bcrypt and never stored in plain text.
 
 All `/api/cocktails`, `/api/cocktails/:id/notes`, `/api/notes`, and `/api/favorites` routes require a valid token. Write operations (create/update/delete) are scoped to the authenticated user; read operations for cocktails also return cocktails seeded for all users.
+
+
+## Deployment
+
+The app is deployed as two separate services:
+
+* **Frontend** — [Vercel](https://vercel.com), static build of the Vite app. Env var: `VITE_API_BASE_URL` (points at the backend URL below).
+* **Backend** — [Render](https://render.com), Flask served via `gunicorn`, with a Render-managed PostgreSQL database. Env vars: `DATABASE_URL` (Postgres connection string), `ALLOWED_ORIGIN` (the deployed frontend URL, for CORS), `FLASK_DEBUG=false`.
+
+Live URLs:
+
+* Frontend: [https://grp-2-module6.vercel.app](https://grp-2-module6.vercel.app)
+* Backend API: [https://cocktail-finder-backend-snsy.onrender.com](https://cocktail-finder-backend-snsy.onrender.com)
+
+Since auth is token-based (not cookie/session-based), the frontend and backend can be hosted on different domains without any proxy or same-origin setup — CORS is scoped to just the frontend's origin via `ALLOWED_ORIGIN`.
 
 
 ## Installation

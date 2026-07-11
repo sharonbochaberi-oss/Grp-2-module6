@@ -21,6 +21,7 @@ dist-ssr
 *.local
 .env
 .env.*
+!.env.example
 coverage
 .vite
 server/db.json

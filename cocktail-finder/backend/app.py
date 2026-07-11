@@ -13,7 +13,8 @@ from routes.auth import auth_bp
 app = Flask(__name__)
 app.config.from_object(Config)
 
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization"]}})
+allowed_origin = os.environ.get("ALLOWED_ORIGIN", "*")
+CORS(app, resources={r"/api/*": {"origins": allowed_origin, "allow_headers": ["Content-Type", "Authorization"]}})
 
 db.init_app(app)
 migrate.init_app(app, db)
